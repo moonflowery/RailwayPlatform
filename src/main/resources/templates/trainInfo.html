@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>列车信息</title>
+    <link rel="stylesheet" href="../static/bootstrap/bootstrap-select-master/dist/css/bootstrap-select.min.css">
+    <link rel="stylesheet" href="../static/bootstrap/bootstrap-3.3.7-dist/css/bootstrap.css">
+    <link rel="stylesheet" href="../static/bootstrap/bootstrap-table-master/dist/bootstrap-table.css">
+    <link rel="stylesheet" href="../static/css/tableSetting.css">
+    <link rel="stylesheet" href="../static/css/jquery-ui.min.css"/>
+        <script src="../static/jquery/jquery-3.3.1.min.js"></script>
+
+    <script type="text/javascript" src="../static/jquery/jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="../static/jquery/jquery-ui.min.js"></script>
+    <script src="../static/bootstrap/bootstrap-3.3.7-dist/js/bootstrap.js"></script>
+
+    <script src="../static/bootstrap/bootstrap-table-master/dist/bootstrap-table.js"></script>
+    <script src="../static/bootstrap/bootstrap-table-master/dist/locale/bootstrap-table-zh-CN.js"></script>
+    <script src="../static/bootstrap/bootstrap-select-master/dist/js/bootstrap-select.min.js"></script>
+    <script src="../static/js/trainInfo.js"></script>
+    <script src = "../static/jquery/tableExport.js"></script>
+    <script src="../static/bootstrap/bootstrap-table-master/dist/extensions/export/bootstrap-table-export.js"></script>
+
+
+</head>
+<body>
+<div class="container-fluid" >
+    <div class="row clearfix" style="margin-top: 30px" align="center">
+        <div class="col-md-12 column" >
+            <div class="form-inline">
+                <div class="form-group" style="width: auto;margin-right: 1%"  >
+                    <label for="IMSI">IMSI</label>
+                    <input type="text" class="form-control" id="IMSI" style="width: 160px">
+                </div>
+                <div class="form-group" style="margin-right: 1%">
+                    <label for="MSISDN">MSISDN</label>
+                    <input type="text" class="form-control" id="MSISDN" style="width: 160px">
+                </div>
+
+                <div class="form-group" data-width="fit" style="margin-right: 1%">
+                    <label for="CTCSID">CTCSID</label>
+                    <input type="text" class="form-control" id="CTCSID" style="width: 80px">
+                </div>
+                <button id="query" type="submit" style="background-color: #9A9E95" class="btn btn-default">查询</button>
+            </div>
+    </div>        <!--    表格    -->
+        <div class="row clearfix" style="margin-top: 1%;margin-left: 3%;width:94%;">
+            <table id="trainInfoTable" class="table table-bordered">
+                <!--使用bootstrap提供的表格函数-->
+            </table>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1045 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cars.railway.dao.oracle.IOracleDao">
+    <select id="selectDeviceInfo" resultType="java.util.HashMap">
+        SELECT
+       DEVICEID,  VENDOR
+        FROM
+        RAILS.DEVICEINFO
+		where
+		DEVICEID is not null
+		and
+		VENDOR is not NULL
+		GROUP BY DEVICEID,VENDOR
+    </select>
+
+    <select id="selectCellConfig" resultType="java.util.Map">
+        SELECT
+        LINENUM, BTSNAME, CIRCLENUM, CELLNAME, LAC, CI, NCC,
+        BCC, BCCH, DXCPORTHEAD, DXCPORTTAIL, CELLNUM, ISC3,
+        CALL, ADJCELL,MONLINESLOTHEAD, MONLINESLOTTAIL,R.NAME
+        FROM
+        RAILS.CELLCONFIG C, RAILS.RAILLINENUM R
+        WHERE
+        C.LINENUM = R.LINENUMBER
+    </select>
+
+    <!--小区表默认查询所有或按条件查询-->
+        <select id="selectAllCellConfig" parameterType="java.util.Map" resultType="java.util.Map">
+        SELECT *
+        FROM CELLCONFIG
+        <where>
+            <if test="lineNum != null and lineNum != ''">
+                LINENUM = #{lineNum}
+            </if>
+            <if test = "cellName != null and cellName != ''">
+                AND CELLNAME like '%${cellName}%'
+            </if>
+            <if test = "lac != null and lac != ''">
+                AND LAC like '%${lac}%'
+            </if>
+            <if test = "ci != null and ci != ''">
+                AND CI like '%${ci}%'
+            </if>
+        </where>
+    </select>
+    <!--列车表默认查询所有或按条件查询-->
+    <select id="selectTrainInfo" parameterType="java.util.Map" resultType="java.util.Map">
+        SELECT *
+        FROM LOCNUMMSISDN
+        <where>
+            <if test="IMSI != null and IMSI != ''">
+                IMSI = #{IMSI}
+            </if>
+            <if test = "MSISDN != null and MSISDN != ''">
+                AND MSISDN like '%${MSISDN}%'
+         </if>
+            <if test = "CTCSID != null and CTCSID != ''">
+                AND CTCSID = #{CTCSID}
+            </if>
+        </where>
+    </select>
+
+
+
+    <!--通过小区名修改记录-->
+    <update id="updateCellInfoByCellName" parameterType="java.util.Map">
+        UPDATE CELLCONFIG
+        <set>
+            <if test="inputNCC != null and inputNCC != ''">
+                NCC = #{inputNCC},
+            </if>
+            <if test="inputBCC != null and inputBCC != ''">
+                BCC = #{inputBCC},
+            </if>
+            <if test="inputBCCH != null and inputBCCH != ''">
+                BCCH = #{inputBCCH},
+            </if>
+            <if test="inputCALL != null and inputCALL != ''">
+                `CALL` = #{inputCALL},
+            </if>
+            <if test="inputADJCELL != null and inputADJCELL != ''">
+                ADJCELL = #{inputADJCELL},
+            </if>
+        </set>
+        WHERE CELLNAME = #{id}
+    </update>
+    <!--从ABIS和AMON表中根据MSISDN，按照时间范围，查询出对应MobileID-->
+    <select id="selectMobileIdByAbisAndAmon" resultType="java.util.ArrayList" >
+        SELECT distinct(MOBILEID)
+            FROM ABISMON.ABISCALLRECORD
+            WHERE MSISDN = #{msisdn}
+                AND REQUESTSTARTTIME between to_timestamp(#{startTime}, 'YYYY-MM-DD HH24:MI:SS')
+                AND to_timestamp(#{endTime}, 'YYYY-MM-DD HH24:MI:SS')
+                AND MOBILEID like #{mobieIdLike}
+        UNION
+            (SELECT distinct(MOBILEID)
+            FROM AMON.ACALLRECORD
+            WHERE MSISDN = #{msisdn}
+                AND requesttime between to_timestamp(#{startTime}, 'YYYY-MM-DD HH24:MI:SS')
+                AND to_timestamp(#{endTime}, 'YYYY-MM-DD HH24:MI:SS')
+                AND MOBILEID like #{mobieIdLike})
+
+    </select>
+    <!--方便测试-->
+    <select id="test04" resultType="java.util.ArrayList" >
+        SELECT distinct(MOBILEID) FROM ABISMON.ABISCALLRECORD WHERE MSISDN = #{msisdn}
+                                                                AND REQUESTSTARTTIME between to_timestamp('2021-10-12 10:48:56', 'YYYY-MM-DD HH24:MI:SS')
+                and to_timestamp('2022-10-22 10:48:56', 'YYYY-MM-DD HH24:MI:SS') AND MOBILEID like #{mobieIdLike}
+        UNION (SELECT distinct(MOBILEID) FROM AMON.ACALLRECORD WHERE MSISDN = #{msisdn}
+                                                                 AND requesttime between to_timestamp('2021-10-12 10:48:56', 'YYYY-MM-DD HH24:MI:SS')
+                and to_timestamp('2022-10-22 10:48:56', 'YYYY-MM-DD HH24:MI:SS') AND MOBILEID like #{mobieIdLike})
+    </select>
+    <!--根据列车号查询出列车-->
+    <select id="selectCountLocByLoc" resultType="java.lang.Integer" parameterType="java.lang.String">
+        SELECT count(LOCONUM) FROM RAILS.LOCNUMMSISDN WHERE LOCONUM = #{locNum}
+    </select>
+
+    <select id="selectCountLocByMs" resultType="java.lang.Integer" parameterType="java.lang.String">
+        SELECT count(LOCONUM) FROM RAILS.LOCNUMMSISDN WHERE MSISDN = #{msisdn}
+    </select>
+
+
+    <update id="updateImsiByMsi">
+     UPDATE RAILS.LOCNUMMSISDN SET IMSI= #{imeisTr} WHERE MSISDN=#{msisdn} AND IMSI is null
+    </update>
+
+    <update id="updateLocon" >
+        update RAILS.LOCNUMMSISDN SET LOCONUM = #{loconum} where MSISDN = #{msisdn}
+    </update>
+
+
+
+
+    <select id="selectLocnumMsisdn" resultType="java.util.Map">
+        SELECT
+        MSISDN, IMSI, CTCSID
+        FROM
+        RAILS.LOCNUMMSISDN
+        where
+        IMSI is not  NULL
+    </select>
+
+    <select id="getPricallrecord" resultType="java.util.HashMap" parameterType="java.util.Map">
+            SELECT * FROM
+            "PRIMON"."PRICALLRECORD"
+            where
+            SETUPTIME
+            between to_date(#{startTime},'yyyy-mm-dd hh24:mi:ss')
+			and to_date(#{endTime},'yyyy-mm-dd hh24:mi:ss')
+            <if test = "msisdn != null and '' neq msisdn">
+                and MSISDN_ATP = #{msisdn}
+            </if>
+            <if test = "rbc != null and '' neq rbc">
+                and MSISDN_RBC = ${rbc}
+            </if>
+			ORDER BY SETUPTIME ASC
+    </select>
+
+    <select id="selectRailLineNum" resultType="java.util.Map">
+        SELECT
+        *
+        FROM
+    RAILLINENUM
+    </select>
+
+    <select id="selectDesignedHanderover" resultType="java.util.Map">
+        select
+        *
+        from
+        "ABISMON".DESIGNEDHANDOVER
+    </select>
+
+    <select id="selectPricallReocrdByID" resultType="java.util.Map" parameterType="java.lang.Long">
+        SELECT
+        *
+        FROM
+        "PRIMON"."PRICALLRECORD"
+        where ID = ${id}
+    </select>
+
+    <select id="selectPricallReocrdByCtcsid" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        SELECT
+          *
+        FROM
+        "PRIMON"."PRICALLRECORD"
+        where
+		(
+          SETUPTIME
+          between
+          to_timestamp(substr(#{preSetupTime},0,19),'yyyy-mm-dd hh24:mi:ss')  - 50/60/24
+          and
+          to_timestamp(substr(#{preSetupTime},0,19),'yyyy-mm-dd hh24:mi:ss')   + 120/60/24
+        )
+        and  CTCSID = #{ctcsId}
+        order by  ID ASC
+    </select>
+
+
+    <select id="selectCtcsidFromPriuserdata" parameterType="java.util.Map" resultType="java.lang.Long">
+        select   etcsid  from  (
+             select
+            etcsid ,COUNT(*)
+                from
+                primon.priuserdata
+                where
+                callrecordid = ${ID}
+                and
+                etcsid > 0
+                GROUP BY etcsid
+          ORDER BY COUNT(*)  desc )
+        where ROWNUM=1
+    </select>
+
+    <select id="selectTrainNumFromPriuserdata" parameterType="java.util.Map" resultType="java.lang.Long">
+       select   TRAINNUM  from  (
+        select
+            TRAINNUM ,COUNT(*)
+                from
+                primon.priuserdata
+                where
+                callrecordid = ${ID}
+                and
+                trainnum is not null and trainnum !=0
+                GROUP BY TRAINNUM
+          ORDER BY COUNT(*)  desc )
+        where ROWNUM=1
+    </select>
+
+    <select id="selectPriUserDataStart136" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        SELECT
+        substr(to_char(p.DISCTIME,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as TIME,
+         p.LOCONUM,  p.EQUIPNUM, p.DIRECTION, p.LRBG, p.KMPOST,p.SPEED,
+          p.MSGTYPE, p.MSGSUBTYPE, p.ISCRCPASS,p."DATA"
+        FROM
+        "PRIMON"."PRIUSERDATA" p ,
+                                    (SELECT
+                                    callrecordid,	max(DISCTIME)  disct
+                                    FROM
+                                    "PRIMON"."PRIUSERDATA"
+                                    where
+                                    (
+                                    DISCTIME
+                                    between
+                                    to_timestamp(substr(#{preDiscTime},0,19),'yyyy-mm-dd hh24:mi:ss') - 4/60/24
+                                    and
+                                    to_timestamp(substr(#{preDiscTime},0,19),'yyyy-mm-dd hh24:mi:ss')
+                                    )
+                                    and
+                                    CALLRECORDID = ${prePriId}
+                                    and MSGSUBTYPE = 136 group by CALLRECORDID
+                                    ) m
+        where
+            p.DISCTIME  >=   m.disct
+        and m.CALLRECORDID=p.CALLRECORDID
+        and  p.DISCTIME <![CDATA[<]]> to_timestamp(substr(#{preDiscTime},0,19),'yyyy-mm-dd hh24:mi:ss')
+         and
+          p.MSGSUBTYPE is not null and  p.MSGTYPE is not null and  p."DATA" is not null
+        ORDER BY p.DISCTIME
+    </select>
+
+    <select id="selectAbisUserDataStart136" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        SELECT
+        substr(to_char(p.DISCTIME,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as TIME,
+         p.LOCONUM,  p.EQUIPNUM, p.DIRECTION, p.LRBG, p.KMPOST,p.SPEED,
+          p.MSGTYPE, p.MSGSUBTYPE, p.ISCRCPASS,p."DATA"
+        FROM
+        ABISUSRDATA.ABISUSERDATA1   p ,
+                                    (SELECT
+                                    callrecordid,	max(DISCTIME)  disct
+                                    FROM
+                                    ABISUSRDATA.ABISUSERDATA1
+                                    where
+                                    (
+                                    DISCTIME
+                                    between
+                                    to_timestamp(substr(#{preDiscTime},0,19),'yyyy-mm-dd hh24:mi:ss') - 4/60/24
+                                    and
+                                    to_timestamp(substr(#{preDiscTime},0,19),'yyyy-mm-dd hh24:mi:ss')
+                                    )
+                                    and
+                                    CALLRECORDID = ${preAbisId}
+                                    and MSGSUBTYPE = 136 group by CALLRECORDID
+                                    ) m
+        where
+            p.DISCTIME  >=   m.disct
+        and m.CALLRECORDID=p.CALLRECORDID
+        and  p.DISCTIME <![CDATA[<]]> to_timestamp(substr(#{preDiscTime},0,19),'yyyy-mm-dd hh24:mi:ss')
+         and
+          p.MSGSUBTYPE is not null and  p.MSGTYPE is not null and  p."DATA" is not null
+        ORDER BY p.DISCTIME
+    </select>
+
+    <select id="selectAUserDataStart136" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        SELECT
+        substr(to_char(p.DISCTIME,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as TIME,
+         p.LOCONUM,  p.EQUIPNUM, p.DIRECTION, p.LRBG, p.KMPOST,p.SPEED,
+          p.MSGTYPE, p.MSGSUBTYPE, p.ISCRCPASS,p."DATA"
+        FROM
+        AUSRDATA.AUSERDATA1   p ,
+                                    (SELECT
+                                    callrecordid,	max(DISCTIME)  disct
+                                    FROM
+                                    AUSRDATA.AUSERDATA1
+                                    where
+                                    (
+                                    DISCTIME
+                                    between
+                                    to_timestamp(substr(#{preDiscTime},0,19),'yyyy-mm-dd hh24:mi:ss') - 4/60/24
+                                    and
+                                    to_timestamp(substr(#{preDiscTime},0,19),'yyyy-mm-dd hh24:mi:ss')
+                                    )
+                                    and
+                                    CALLRECORDID = ${preAId}
+                                    and MSGSUBTYPE = 136 group by CALLRECORDID
+                                    ) m
+        where
+            p.DISCTIME  >=   m.disct
+        and m.CALLRECORDID=p.CALLRECORDID
+        and  p.DISCTIME <![CDATA[<]]> to_timestamp(substr(#{preDiscTime},0,19),'yyyy-mm-dd hh24:mi:ss')
+         and
+          p.MSGSUBTYPE is not null and  p.MSGTYPE is not null and  p."DATA" is not null
+        ORDER BY p.DISCTIME
+    </select>
+
+    <select id="selectPriUserDataByID" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        SELECT
+          substr(to_char(DISCTIME,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as TIME,
+           LOCONUM,  EQUIPNUM, DIRECTION, LRBG, KMPOST,SPEED, MSGTYPE,
+            MSGSUBTYPE, ISCRCPASS,"DATA"
+        FROM
+        "PRIMON"."PRIUSERDATA"
+        where
+				(
+          DISCTIME
+          between
+          to_timestamp(substr(#{curSetupTime},0,19),'yyyy-mm-dd hh24:mi:ss')
+          and
+          to_timestamp(substr(#{curSetupTime},0,19),'yyyy-mm-dd hh24:mi:ss')  + 2/60/24
+        )
+		  and
+          CALLRECORDID = ${curPriId}
+          and
+          MSGSUBTYPE is not null and  MSGTYPE is not null and "DATA" is not null
+          ORDER BY DISCTIME
+    </select>
+
+    <select id="selectMrRxqualRxlev_pre" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        SELECT
+             substr(to_char(MRTIMESTAMP,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as TIME,
+             #{preMsisdnAtp} as MISISDN,
+             LAC,CI,BCCH,KMPOST,"DATA",DEVICENUM
+        FROM "ABISMON"."ABISMEASREPORT"
+        where
+        (
+          MRTIMESTAMP
+          between
+          to_timestamp(substr(#{preDiscTime},0,19),'yyyy-mm-dd hh24:mi:ss') - 1/60/24
+          and
+          to_timestamp(substr(#{preDiscTime},0,19),'yyyy-mm-dd hh24:mi:ss')
+        )
+        and
+        CALLRECORDID = ${preAbisId}
+        ORDER BY MRTIMESTAMP
+    </select>
+
+    <select id="selectMrRxqualRxlev_cur" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        SELECT
+             substr(to_char(MRTIMESTAMP,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as TIME,
+             LAC,CI,BCCH,KMPOST,"DATA",DEVICENUM
+        FROM "ABISMON"."ABISMEASREPORT"
+        where
+        (
+          MRTIMESTAMP
+          between
+          to_timestamp(substr(#{curSetupTime},0,19),'yyyy-mm-dd hh24:mi:ss')
+          and
+          to_timestamp(substr(#{curSetupTime},0,19),'yyyy-mm-dd hh24:mi:ss') + 1/60/24
+        )
+        and
+        CALLRECORDID = ${curAbisId}
+        ORDER BY MRTIMESTAMP
+    </select>
+
+    <select id="selectAbisMessage_pre" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        SELECT
+            substr(to_char(MSGTIMESTAMP,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as TIME,
+            ABISMSGTYPE,UMTYPE,DIRECTION,
+            LAC,CI,BCCH,KMPOST,DEVICENUM
+        FROM
+            "ABISMON"."ABISLAYER3MESSAGE"
+        where
+        (
+            MSGTIMESTAMP
+            between
+            to_timestamp(substr(#{preDiscTime},0,19),'yyyy-mm-dd hh24:mi:ss') - 2/60/24
+            and
+            to_timestamp(substr(#{preDiscTime},0,19),'yyyy-mm-dd hh24:mi:ss') + 0.5/60/24
+        )
+        and
+        CALLRECORDID = ${preAbisId}
+        ORDER BY MSGTIMESTAMP
+    </select>
+
+    <select id="selectAbisMessage_cur" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        SELECT
+            substr(to_char(MSGTIMESTAMP,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as TIME,
+            ABISMSGTYPE,UMTYPE,DIRECTION,
+            LAC,CI,BCCH,KMPOST,DEVICENUM
+        FROM
+            "ABISMON"."ABISLAYER3MESSAGE"
+        where
+        (
+            MSGTIMESTAMP
+            between
+            to_timestamp(substr(#{curSetupTime},0,19),'yyyy-mm-dd hh24:mi:ss') - 0.5/60/24
+            and
+            to_timestamp(substr(#{curSetupTime},0,19),'yyyy-mm-dd hh24:mi:ss') + 2/60/24
+        )
+        and
+        CALLRECORDID = ${curAbisId}
+        ORDER BY MSGTIMESTAMP
+    </select>
+
+    <select id="selectAbisHandover" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        SELECT
+          substr(to_char(HOSTARTTIME,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as STARTTIME,
+          substr(to_char(HOENDTIME,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as ENDTIME,
+         speed  * 5 as SPEED, KMPOST, LACSOURCE,CISOURCE  ,LACTARGET,CITARGET ,ISSUCCESS
+         FROM
+          "ABISMON"."ABISHANDOVER"
+          where
+          CALLRECORDID = ${preAbisId}
+          ORDER BY HOSTARTTIME
+    </select>
+
+    <select id="selectAHandover" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        SELECT
+                substr(to_char(HOSTARTTIME,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as STARTTIME,
+                substr(to_char(HOCOMPLETETIME,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as ENDTIME,
+                 KMPOST, LACSOURCE,CISOURCE,
+        		LACTARGET,CITARGET,HOCAUSE,
+        		HOFAILURECAUSE,H0STATUS,ISHOSUCCESS
+        FROM
+                "AMON"."AHANDOVER"
+        where
+                CALLRECORDID = ${preAId}
+        ORDER BY HOSTARTTIME
+    </select>
+
+    <select id="selectAMessage_pre" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        SELECT
+            substr(to_char(MSGTIMESTAMP,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as TIME,
+            LAC,CI,SCCPTYPE,"DATA",
+            BSSAPTYPE,BSSMAPTYPE,UMTYPE,DIRECTION,KMPOST
+        FROM
+            "AMON"."ASCCPMESSAGE"
+        where
+        (
+          MSGTIMESTAMP
+          between
+          to_timestamp(substr(#{preDiscTime},0,19),'yyyy-mm-dd hh24:mi:ss') - 2/60/24
+          and
+          to_timestamp(substr(#{preDiscTime},0,19),'yyyy-mm-dd hh24:mi:ss') + 0.5/60/24
+        )
+        and
+        CALLRECORDID = ${preAId}
+        ORDER BY MSGTIMESTAMP
+    </select>
+
+    <select id="selectAMessage_cur" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        SELECT
+            substr(to_char(MSGTIMESTAMP,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as TIME,
+            LAC,CI,SCCPTYPE,
+            BSSAPTYPE,BSSMAPTYPE,UMTYPE,DIRECTION,KMPOST
+        FROM
+            "AMON"."ASCCPMESSAGE"
+        where
+        (
+            MSGTIMESTAMP
+            between
+            to_timestamp(substr(#{curSetupTime},0,19),'yyyy-mm-dd hh24:mi:ss') - 0.5/60/24
+            and
+            to_timestamp(substr(#{curSetupTime},0,19),'yyyy-mm-dd hh24:mi:ss') + 2/60/24
+        )
+        and
+        CALLRECORDID = ${curAId}
+        ORDER BY MSGTIMESTAMP
+    </select>
+
+    <select id="selectAbisPreDiscTime" resultType="java.lang.String" parameterType="com.cars.railway.bean.C3Info">
+        SELECT
+            substr(to_char(DISCTIME,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as TIME
+        FROM
+            "ABISMON"."ABISCALLRECORD"
+        where
+        ID = ${preAbisId}
+    </select>
+
+    <select id="selectPriDiscTime" resultType="java.lang.String" parameterType="com.cars.railway.bean.C3Info">
+        SELECT
+                to_char(max(DISCTIME),'yyyy-mm-dd hh24:mi:ss.ff') as TIME
+        FROM
+            "PRIMON"."PRIUSERDATA"
+        where
+        CALLRECORDID  = ${prePriId}
+    </select>
+
+    <select id="selectAPreDiscTime" resultType="java.lang.String" parameterType="com.cars.railway.bean.C3Info">
+        SELECT
+            substr(to_char(DISCTIME,'yyyy-mm-dd hh24:mi:ss.ff'),12,12) as TIME
+        FROM
+            "AMON"."ACALLRECORD"
+        where
+        ID = ${preAId}
+    </select>
+
+    <select id="findPreAbisIdByImsi" resultType="java.lang.Long" parameterType="com.cars.railway.bean.C3Info">
+        SELECT
+        ID
+        FROM
+        ABISMON.ABISCALLRECORD
+        WHERE
+        (
+        <if test = "preImsi != null and '' neq preImsi">
+            (MOBILEID=#{preImsi}   and  calltype=0)   or
+        </if>
+         (msisdn=#{preMsisdnAtp} AND  (calltype=7 or calltype=0 ) ))
+        AND
+        REQUESTSTARTTIME
+        BETWEEN to_timestamp(substr(#{preSetupTime},0,19), 'yyyy-mm-dd hh24:mi:ss')  - 5/60/60/24
+        and to_timestamp(substr(#{preDiscTime},0,19), 'yyyy-mm-dd hh24:mi:ss')
+    </select>
+
+    <select id="findCurAbisIdByImsi" resultType="java.lang.Long" parameterType="com.cars.railway.bean.C3Info">
+        SELECT
+        ID
+        FROM
+        ABISMON.ABISCALLRECORD
+        WHERE
+        (
+        <if test = "curImsi != null and '' neq curImsi">
+            (MOBILEID=#{curImsi} AND  calltype=0) OR
+        </if>
+        (msisdn=#{curMsisdnAtp} AND  (calltype=7 or calltype=0 ) ))
+        AND
+        REQUESTSTARTTIME
+        BETWEEN
+        to_timestamp(substr(#{curSetupTime},0,19), 'yyyy-mm-dd hh24:mi:ss')  - 5/60/60/24
+        and to_timestamp(substr(#{curDiscTime},0,19), 'yyyy-mm-dd hh24:mi:ss')
+    </select>
+
+    <select id="findPreAbisIdByRbc" resultType="java.lang.Long" parameterType="com.cars.railway.bean.C3Info">
+        SELECT ID FROM
+        ABISMON.ABISCALLRECORD
+        WHERE
+        CALLEDNUM = #{preMsisdnRbc}
+        AND
+        REQUESTSTARTTIME
+        BETWEEN
+        to_timestamp(substr(#{preSetupTime},0,19), 'yyyy-mm-dd hh24:mi:ss')  - 5/60/60/24
+        and
+        to_timestamp(substr(#{preSetupTime},0,19), 'yyyy-mm-dd hh24:mi:ss')
+    </select>
+
+    <select id="findCurAbisIdByRbc" resultType="java.lang.Long" parameterType="com.cars.railway.bean.C3Info">
+        SELECT
+        ID
+        FROM
+        ABISMON.ABISCALLRECORD
+        WHERE
+        CALLEDNUM = #{curMsisdnRbc}
+        AND
+        REQUESTSTARTTIME
+        BETWEEN
+        to_timestamp(substr(#{curSetupTime},0,19), 'yyyy-mm-dd hh24:mi:ss')  - 5/60/60/24
+        and
+        to_timestamp(substr(#{curSetupTime},0,19), 'yyyy-mm-dd hh24:mi:ss')
+    </select>
+
+    <select id="findPreAIdByImsi" resultType="java.lang.Long" parameterType="com.cars.railway.bean.C3Info">
+        SELECT
+        ID
+        FROM
+        AMON.ACALLRECORD
+        WHERE
+        (
+        <if test = "preImsi != null and '' neq preImsi">
+            (MOBILEID=#{preImsi} AND  calltype=0) OR
+        </if>
+            (msisdn=#{preMsisdnAtp} AND  (calltype=13 or calltype=0))
+        )
+        AND
+        REQUESTTIME
+        BETWEEN to_timestamp(substr(#{preSetupTime},0,19), 'yyyy-mm-dd hh24:mi:ss')  - 5/60/60/24
+        and to_timestamp(substr(#{preDiscTime},0,19), 'yyyy-mm-dd hh24:mi:ss')
+    </select>
+
+    <select id="findCurAIdByImsi" resultType="java.lang.Long" parameterType="com.cars.railway.bean.C3Info">
+        SELECT
+        ID
+        FROM
+        AMON.ACALLRECORD
+        WHERE
+        (
+        <if test = "curImsi != null and '' neq curImsi">
+            (MOBILEID=#{curImsi} AND  calltype=0) OR
+        </if>
+            (msisdn=#{curMsisdnAtp} AND  (calltype=13 or calltype=0) )
+        )
+        AND
+        REQUESTTIME
+        BETWEEN
+            to_timestamp(substr(#{curSetupTime},0,19), 'yyyy-mm-dd hh24:mi:ss')  - 5/60/60/24
+        and to_timestamp(substr(#{curDiscTime},0,19), 'yyyy-mm-dd hh24:mi:ss')
+    </select>
+
+    <select id="findPreAIdByRbc" resultType="java.lang.Long" parameterType="com.cars.railway.bean.C3Info">
+        SELECT
+        ID
+        FROM
+        AMON.ACALLRECORD
+        WHERE
+        CALLEDNUM = #{preMsisdnRbc}
+        AND
+        REQUESTTIME
+        BETWEEN
+        to_timestamp(substr(#{preSetupTime},0,19), 'yyyy-mm-dd hh24:mi:ss')  - 5/60/60/24
+        and
+        to_timestamp(substr(#{preSetupTime},0,19), 'yyyy-mm-dd hh24:mi:ss')
+    </select>
+
+    <select id="findCurAIdByRbc" resultType="java.lang.Long" parameterType="com.cars.railway.bean.C3Info">
+        SELECT
+        ID
+        FROM
+        AMON.ACALLRECORD
+        WHERE
+        CALLEDNUM = #{curMsisdnRbc}
+        AND
+        REQUESTTIME
+        BETWEEN
+        to_timestamp(substr(#{curSetupTime},0,19), 'yyyy-mm-dd hh24:mi:ss')  - 5/60/60/24
+        and
+        to_timestamp(substr(#{curSetupTime},0,19), 'yyyy-mm-dd hh24:mi:ss')
+    </select>
+
+    <select id="getPricallrecordForJudge" resultType="java.util.HashMap" >
+        SELECT * FROM
+            "PRIMON"."PRICALLRECORD"
+        where
+            SETUPTIME >= trunc(sysdate - interval '3' hour,'mi') and DISCTIME IS NOT NULL
+        ORDER BY CTCSID,SETUPTIME ASC
+    </select>
+
+    <select id="getPricallrecordByATP" resultType="java.util.HashMap" parameterType="java.util.Map">
+        SELECT * FROM
+            "PRIMON"."PRICALLRECORD"
+        where
+            SETUPTIME >= trunc(sysdate - interval '3' hour,'mi')  and DISCTIME IS NOT NULL
+            AND msisdn_atp in (${atps})
+        ORDER BY SETUPTIME ASC
+    </select>
+
+    <select id="getPricallrecordByCTCSID" resultType="java.util.HashMap" parameterType="java.util.Map">
+        SELECT * FROM
+            "PRIMON"."PRICALLRECORD"
+        where
+          SETUPTIME >= trunc(sysdate - interval '3' hour,'mi')  and DISCTIME IS NOT NULL
+          AND ctcsid= ${ctcsid}
+        ORDER BY CTCSID,SETUPTIME ASC
+    </select>
+
+    <select id="selectHistoryMrByKmpost_shang"  resultType="java.util.Map">
+        select KMPOST, LAC, CI,BCCH,DATA,DEVICENUM
+        from ABISMON.ABISMEASREPORT
+        where
+	    to_char(MRTIMESTAMP, 'yyyy-mm-dd') like Concat(to_char(sysdate - 1, 'yyyy-mm-dd'), '%')
+	    and LAC = ${lac} and  CI = ${ci}
+	    <!--公里标条件先屏蔽，有可能公里标是空
+	    and KMPOST > (${kmpost} - 100) and  KMPOST   <![CDATA[ < ]]> (${kmpost} + 1)
+	    -->
+    </select>
+
+    <select id="selectHistoryMrByKmpost_xia"  resultType="java.util.Map">
+        select KMPOST, LAC, CI,BCCH,DATA,DEVICENUM
+        from ABISMON.ABISMEASREPORT
+        where
+	    to_char(MRTIMESTAMP, 'yyyy-mm-dd') like Concat(to_char(sysdate - 1, 'yyyy-mm-dd'), '%')
+	    and LAC = ${lac} and  CI = ${ci}
+	    <!--公里标条件先屏蔽，有可能公里标是空
+	    and KMPOST > (${kmpost} - 1) and  KMPOST   <![CDATA[ < ]]> (${kmpost} + 100)
+	    -->
+    </select>
+
+    <select id="selectAllMeasureReport" resultType="java.util.Map" parameterType="java.util.Map">
+        SELECT   m.*
+        from
+        "ABISMON"."ABISMEASREPORT"  m,"ABISMON"."ABISCALLRECORD" cr
+        where
+        cr.REQUESTSTARTTIME
+        BETWEEN
+        to_timestamp(#{startTime},'yyyy-mm-dd hh24:mi:ss')
+        and
+        to_timestamp(#{endTime},'yyyy-mm-dd hh24:mi:ss')
+        and
+        cr.CALLEDNUM    like  '92%'
+        and
+        m.SPEED > 0
+        and
+        m.KMPOST > 0
+        and
+        cr.ID = m.CALLRECORDID
+    </select>
+
+    <select id="selectAllAbisHandover" resultType="java.util.Map" parameterType="java.util.Map">
+        SELECT
+         ho.*  from
+        "ABISMON"."ABISHANDOVER" ho,"ABISMON"."ABISCALLRECORD" cr
+        where
+          cr.REQUESTSTARTTIME
+          BETWEEN
+          to_timestamp(#{startTime},'yyyy-mm-dd hh24:mi:ss')
+          and
+          to_timestamp(#{endTime},'yyyy-mm-dd hh24:mi:ss')
+         and
+         cr.CALLEDNUM like  '92%' and cr.ID = ho.CALLRECORDID
+    </select>
+
+    <select id="selectTrainnumKmpost" resultType="java.util.Map">
+        select TRAINNUM, KMPOST,RAILLINE,ETCSID,CALLRECORDID
+        from
+        (select TRAINNUM,kmpost,RAILLINE,ETCSID,CALLRECORDID,row_number() over(PARTITION BY TRAINNUM ORDER by id desc) flag
+        from primon.priuserdata
+            where CALLRECORDID in
+                            (select id
+                            from primon.pricallrecord
+                            where disctime is null
+                            and to_char(SETUPTIME, 'yyyy-mm-dd') =
+                            (select to_char(sysdate, 'yyyy-MM-dd') from dual)
+                            )
+        and TRAINNUM is not null and kmpost  is not null and TRAINNUM != 0 and kmpost != 0)
+        where flag = 1
+    </select>
+
+    <select id="selectCircuitDomainByDay" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        t1.time,r.name,t1.connsucrate as PRI连接成功率,t1.fenzi as 连接成功率分子,t1.fenmu as 连接成功率分母,
+        t2.pkglostrate as PRI丢包率,  t2.fenmu as 丢包率分母
+        from
+        (
+        select
+        time, RAILLINE, decode(nvl(sum(case when msgtype = 1280 then 1 end), 0), 0, 0,
+        DECODE(nvl(sum(case when msgtype = 1280 then 1 end), 0),0,100,
+        ROUND(nvl(sum(case when msgtype = 0 then 1 end), 0) /
+        nvl(sum(case when msgtype = 1280 then 1 end), 0), 6)) * 100) || '%'  connsucrate,
+        nvl(sum(case when msgtype = 0 then 1 end), 0) as fenzi,
+        nvl(sum(case when msgtype = 1280 then 1 end), 0) as fenmu
+        from
+        (   select distinct to_char(a.SETUPTIME, 'yyyy-mm-dd') time,
+        a.RAILLINE, a.id, b.msgtype
+        from
+        PRIMON.PRICALLRECORD a, PRIMON.PRIUSERDATA  b
+        where
+        a.id = b.CALLRECORDID and a.calltype != 15 AND to_char(a.MSISDN_RBC) LIKE '92%' and a.MSISDN_RBC != '92530103'
+        and ((b.msgtype = 1280 and b.MSGSUBTYPE is null) or (b.msgtype = 0))
+        and to_date(to_char(SETUPTIME, 'yyyy-mm-dd'), 'yyyy-mm-dd') >= to_date(#{startTime}, 'yyyy-mm-dd')
+        and to_date(to_char(SETUPTIME, 'yyyy-mm-dd'), 'yyyy-mm-dd') <![CDATA[ < ]]> to_date(#{endTime}, 'yyyy-mm-dd')
+        )
+        group by time,RAILLINE
+        ) t1 ,
+        (	select time, RAILLINE,
+        DECODE(SUM(T),0,0,round(count(case when msgtype is null then 1 end) / sum(t), 6))  pkglostrate,
+        sum(t) as fenmu
+        from
+        (
+        select a.time, a.RAILLINE, a.id, a.T, b.msgtype
+        from
+        (
+        select distinct to_char(SETUPTIME,'yyyy-mm-dd') time,RAILLINE,id,setuptime,disctime,
+        round(to_number(to_date(to_char(disctime, 'yyyy-mm-dd hh24:mi:ss'), 'yyyy-mm-dd hh24:mi:ss') -
+        to_date(to_char(setuptime, 'yyyy-mm-dd hh24:mi:ss'), 'yyyy-mm-dd hh24:mi:ss')) * 24, 4) T
+        from PRIMON.PRICALLRECORD
+        where
+        to_date(to_char(SETUPTIME,'yyyy-mm-dd'),'yyyy-mm-dd') >= to_date(#{startTime}, 'yyyy-mm-dd')
+        and
+        to_date(to_char(SETUPTIME,'yyyy-mm-dd'),'yyyy-mm-dd') <![CDATA[ < ]]> to_date(#{endTime}, 'yyyy-mm-dd')
+        AND to_char(MSISDN_RBC) LIKE '92%' and MSISDN_RBC != '92530103'
+        ) a left join
+        (
+        select
+        distinct to_char(b.SETUPTIME, 'yyyy-mm-dd') time, b.RAILLINE, b.id, a.CALLRECORDID, a.msgtype
+        from
+        PRIMON.PRIUSERDATA a, PRIMON.PRICALLRECORD b
+        where
+        b.id = a.CALLRECORDID and a.MSGTYPE = 17664  AND to_char(b.MSISDN_RBC) LIKE '92%'  and b.MSISDN_RBC != '92530103'
+        and to_date(to_char(b.SETUPTIME, 'yyyy-mm-dd'), 'yyyy-mm-dd') >= to_date(#{startTime}, 'yyyy-mm-dd')
+        and to_date(to_char(b.SETUPTIME, 'yyyy-mm-dd'), 'yyyy-mm-dd') <![CDATA[ < ]]> to_date(#{endTime}, 'yyyy-mm-dd')
+        ) b
+        on a.id = b.id and a.time = b.time
+        )
+        group by time,RAILLINE
+        ) t2, rails.raillinenum r
+        where
+        t1.time = t2.time and t1.RAILLINE = t2.RAILLINE
+        and t1.railline = r.linenumber order by 1,2
+    </select>
+
+    <select id="selectCircuitDomainByHour" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        t1.time,r.name,t1.connsucrate as PRI连接成功率,t2.pkglostrate as PRI丢包率
+        from
+        (   select time, RAILLINE, decode(nvl(sum(case when msgtype = 1280 then 1 end), 0), 0, 0,
+            DECODE(nvl(sum(case when msgtype = 1280 then 1 end), 0),0,100,
+            ROUND(nvl(sum(case when msgtype = 0 then 1 end), 0) /
+            nvl(sum(case when msgtype = 1280 then 1 end), 0), 6)) * 100) || '%' connsucrate
+            from
+            (
+            select distinct to_char(a.SETUPTIME, 'yyyy-mm-dd hh24') time,
+            a.RAILLINE, a.id, b.msgtype
+            from
+            PRIMON.PRICALLRECORD a, PRIMON.PRIUSERDATA  b
+            where
+            a.id = b.CALLRECORDID and a.calltype != 15 AND to_char(a.MSISDN_RBC) LIKE '92%'  and a.MSISDN_RBC != '92530103'
+            and ((b.msgtype = 1280 and b.MSGSUBTYPE is null) or (b.msgtype = 0))
+            and to_date(to_char(SETUPTIME, 'yyyy-mm-dd hh24'), 'yyyy-mm-dd hh24') >= to_date(#{startTime}, 'yyyy-mm-dd')
+            and to_date(to_char(SETUPTIME, 'yyyy-mm-dd hh24'), 'yyyy-mm-dd hh24')
+                                          <![CDATA[ < ]]> to_date(#{endTime}, 'yyyy-mm-dd')
+            )
+            group by time,RAILLINE
+        ) t1 ,
+        (select
+            time, RAILLINE, DECODE(SUM(T),0,0,round(count(case when msgtype is null then 1 end) /
+            sum(t), 6))  pkglostrate
+            from
+            (
+            select a.time, a.RAILLINE, a.id, a.T, b.msgtype
+            from
+            (select distinct to_char(SETUPTIME,'yyyy-mm-dd hh24') time,RAILLINE,id,setuptime,disctime,
+            round(to_number(to_date(to_char(disctime, 'yyyy-mm-dd hh24:mi:ss'), 'yyyy-mm-dd hh24:mi:ss') -
+            to_date(to_char(setuptime, 'yyyy-mm-dd hh24:mi:ss'), 'yyyy-mm-dd hh24:mi:ss')) * 24, 4) T
+            from
+            PRIMON.PRICALLRECORD
+            where to_date(to_char(SETUPTIME,'yyyy-mm-dd hh24'),'yyyy-mm-dd hh24') >= to_date(#{startTime}, 'yyyy-mm-dd')
+        and to_date(to_char(SETUPTIME,'yyyy-mm-dd hh24'),'yyyy-mm-dd hh24')
+                                                            <![CDATA[ <= ]]> to_date(#{endTime}, 'yyyy-mm-dd')
+            AND to_char(MSISDN_RBC) LIKE '92%'  and MSISDN_RBC != '92530103'  ) a left join
+            (select
+            distinct to_char(b.SETUPTIME, 'yyyy-mm-dd hh24') time, b.RAILLINE, b.id, a.CALLRECORDID, a.msgtype
+            from
+            PRIMON.PRIUSERDATA a, PRIMON.PRICALLRECORD b
+            where
+            b.id = a.CALLRECORDID and a.MSGTYPE = 17664  AND to_char(b.MSISDN_RBC) LIKE '92%'   and b.MSISDN_RBC != '92530103'
+            and to_date(to_char(b.SETUPTIME, 'yyyy-mm-dd hh24'), 'yyyy-mm-dd hh24') >= to_date(#{startTime}, 'yyyy-mm-dd')
+            and to_date(to_char(b.SETUPTIME, 'yyyy-mm-dd hh24'), 'yyyy-mm-dd hh24')
+                                                                       <![CDATA[ < ]]> to_date(#{endTime}, 'yyyy-mm-dd')
+            )  b
+            on a.id = b.id and a.time = b.time
+            )
+            group by time,RAILLINE
+        ) t2, rails.raillinenum r
+        where  t1.time = t2.time and t1.RAILLINE = t2.RAILLINE and t1.railline = r.linenumber order by 1,2
+    </select>
+
+    <select id="selectPRIConnectFailureData" parameterType="java.util.Map" resultType="java.util.Map">
+        select
+        distinct a.*, b.msgtype
+        from
+        PRIMON.PRICALLRECORD a, PRIMON.PRIUSERDATA  b
+        where
+        a.id = b.CALLRECORDID and a.calltype != 15 AND to_char(a.MSISDN_RBC) LIKE '92%'   and a.MSISDN_RBC != '92530103'
+        and((b.msgtype = 1280 and b.MSGSUBTYPE is null) or (b.msgtype = 0))
+        and to_date(to_char(SETUPTIME, 'yyyy-mm-dd'), 'yyyy-mm-dd') >= to_date(#{startTime}, 'yyyy-mm-dd')
+        and to_date(to_char(SETUPTIME, 'yyyy-mm-dd'), 'yyyy-mm-dd') <![CDATA[ < ]]> to_date(#{endTime}, 'yyyy-mm-dd')
+        ORDER BY a.ID
+    </select>
+
+    <select id="selectPRILostPacketData" parameterType="java.util.Map" resultType="java.util.Map">
+        select  tmp.*  from  (
+        select  a.*  ,b.MSGTYPE
+        from
+        (
+        select distinct *
+        from
+        PRIMON.PRICALLRECORD
+        where
+        to_date(to_char(SETUPTIME,'yyyy-mm-dd'),'yyyy-mm-dd')  >= to_date(#{startTime}, 'yyyy-mm-dd')
+        and to_date(to_char(SETUPTIME,'yyyy-mm-dd'),'yyyy-mm-dd') <![CDATA[ < ]]> to_date(#{endTime}, 'yyyy-mm-dd')
+        AND to_char(MSISDN_RBC) LIKE '92%' and MSISDN_RBC != '92530103'
+        ) a
+        left join (
+        select distinct to_char(b.SETUPTIME, 'yyyy-mm-dd') time, b.RAILLINE, b.id, a.CALLRECORDID, a.msgtype
+        from
+        PRIMON.PRIUSERDATA a, PRIMON.PRICALLRECORD b
+        where b.id = a.CALLRECORDID and a.MSGTYPE = 17664  AND to_char(b.MSISDN_RBC) LIKE '92%'  and b.MSISDN_RBC != '92530103'
+        and to_date(to_char(b.SETUPTIME, 'yyyy-mm-dd'), 'yyyy-mm-dd') >= to_date(#{startTime}, 'yyyy-mm-dd')
+        and to_date(to_char(b.SETUPTIME, 'yyyy-mm-dd'), 'yyyy-mm-dd') <![CDATA[ < ]]> to_date(#{endTime}, 'yyyy-mm-dd')
+        )  b
+        on a.id = b.id
+        ) tmp where  TMP.MSGTYPE is null
+    </select>
+
+    <select id="selectAbislayer3messageDay" parameterType="java.util.Map" resultType="java.util.Map">
+        select  *  from
+        "ABISMON"."ABISLAYER3MESSAGE"
+        where
+        (UMTYPE = 775 or UMTYPE = 1316)  and
+        (MSGTIMESTAMP between  to_timestamp(#{startTime}, 'yyyy-mm-dd hh24:mi:ss')
+                          and  to_timestamp(#{endTime}, 'yyyy-mm-dd hh24:mi:ss')  )
+        order by callrecordid , MSGTIMESTAMP asc
+    </select>
+
+    <select id="selectAbislayer3messageLine" parameterType="java.util.Map" resultType="java.util.Map">
+        select  *  from
+        "ABISMON"."ABISLAYER3MESSAGE"
+        where
+        (UMTYPE = 775 or UMTYPE = 1316)  and
+        (MSGTIMESTAMP between  to_timestamp(#{startTime}, 'yyyy-mm-dd hh24:mi:ss')
+                          and  to_timestamp(#{endTime}, 'yyyy-mm-dd hh24:mi:ss')  )
+           and  RAILLINE = ${lineNum}
+        order by callrecordid , MSGTIMESTAMP asc
+    </select>
+
+    <select id="selectAbislayer3messageTrain" parameterType="java.util.Map" resultType="java.util.Map">
+        select  *  from
+        "ABISMON"."ABISLAYER3MESSAGE"
+        where
+        (UMTYPE = 775 or UMTYPE = 1316)  and
+        (MSGTIMESTAMP between  to_timestamp(#{startTime}, 'yyyy-mm-dd hh24:mi:ss')
+                          and  to_timestamp(#{endTime}, 'yyyy-mm-dd hh24:mi:ss')  )
+           and  callrecordid in  (${abisId})
+        order by callrecordid , MSGTIMESTAMP asc
+    </select>
+
+    <select id="selectMeas" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        mrtimestamp,lac,ci,bcch,to_number(substr(rawtohex(data),23,2),'xx')-110 rxlev,
+        mod(round(to_number(substr(rawtohex(data),27,2),'xx')/8,0),8) rxqual,data
+        from
+        abismon.abismeasreport meas
+        where callrecordid=  ${abisId} order by 2
+    </select>
+
+    <select id="selectHistoryMrRecord" resultType="java.util.Map" parameterType="com.cars.railway.bean.C3Info">
+        select  *  from (select KMPOST, lac, ci, min(ABS(KMPOST - ${kmpost})) num
+                 from ABISMON.ABISMEASREPORT
+                 where
+                 to_char(MRTIMESTAMP, 'yyyy-mm-dd') like Concat(to_char(sysdate - 1, 'yyyy-mm-dd'), '%')
+                 	and  KMPOST != 0
+                 group by KMpost, lac, ci
+                  order by num asc
+                )
+        where rownum=1
+    </select>
+
+    <select id="selectPricallReocrdByC3Info" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        select  *  from PRIMON.PRICALLRECORD
+        where ID = ${prePriId}
+         <if test="curPriId != null and curPriId != '' and curPriId != 0">
+            or   ID = ${curPriId}
+         </if>
+    </select>
+
+    <select id="selectAbiscallReocrdByC3Info" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        select  *  from ABISMON.ABISCALLRECORD
+        where ID = ${preAbisId}
+        <if test="curAbisId != null and curAbisId != '' and curAbisId != 0">
+            or   ID = ${curAbisId}
+        </if>
+    </select>
+
+    <select id="selectAcallReocrdByC3Info" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        select  *  from   AMON.ACALLRECORD
+        where    ID = ${preAId}
+        <if test="curAId != null and curAId != '' and curAId != 0">
+            or   ID = ${curAId}
+        </if>
+    </select>
+
+    <select id="selectPriUserDataByC3Info" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        select  *  from   PRIMON.PRIUSERDATA
+        where   CALLRECORDID  = ${prePriId}
+        <if test="curPriId != null and curPriId != '' and curPriId != 0">
+            or   CALLRECORDID = ${curPriId}
+        </if>
+    </select>
+
+    <select id="selectAbisUserDataByC3Info" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        select  *  from   ABISUSRDATA.ABISUSERDATA1
+        where   CALLRECORDID  = ${preAbisId}
+        <if test="curAbisId != null and curAbisId != '' and curAbisId != 0">
+            or   CALLRECORDID = ${curAbisId}
+        </if>
+    </select>
+
+    <select id="selectAUserDataByC3Info" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        select  *  from   AUSRDATA.AUSERDATA1
+        where   CALLRECORDID  = ${preAId}
+        <if test="curAId != null and curAId != '' and curAId != 0">
+            or   CALLRECORDID = ${curAId}
+        </if>
+    </select>
+
+    <select id="selectAbisMessageByC3Info" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        select  *  from   ABISMON.ABISLAYER3MESSAGE
+        where   CALLRECORDID  = ${preAbisId}
+        <if test="curAbisId != null and curAbisId != '' and curAbisId != 0">
+            or   CALLRECORDID = ${curAbisId}
+        </if>
+    </select>
+
+    <select id="selectAMessageByC3Info" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        select  *  from   AMON.ASCCPMESSAGE
+        where   CALLRECORDID  = ${preAId}
+        <if test="curAId != null and curAId != '' and curAId != 0">
+            or   CALLRECORDID = ${curAId}
+        </if>
+    </select>
+
+    <select id="selectAbisHandoverByC3Info" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        select  *  from   ABISMON.ABISHANDOVER
+        where   CALLRECORDID  = ${preAbisId}
+        <if test="curAbisId != null and curAbisId != '' and curAbisId != 0">
+            or   CALLRECORDID = ${curAbisId}
+        </if>
+    </select>
+
+    <select id="selectAHandoverByC3Info" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        select  *  from   AMON.AHANDOVER
+        where   CALLRECORDID  = ${preAId}
+        <if test="curAId != null and curAId != '' and curAId != 0">
+            or   CALLRECORDID = ${curAId}
+        </if>
+    </select>
+
+    <select id="selectMrDataByC3Info" parameterType="com.cars.railway.bean.C3Info" resultType="java.util.Map">
+        select  *  from   ABISMON.ABISMEASREPORT
+        where    CALLRECORDID  = ${preAbisId}
+        <if test="curAbisId != null and curAbisId != '' and curAbisId != 0">
+            or   CALLRECORDID = ${curAbisId}
+        </if>
+    </select>
+
+
+</mapper>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" href="../static/bootstrap/bootstrap-select-master/dist/css/bootstrap-select.min.css">
+        <link rel="stylesheet" href="../static/bootstrap/bootstrap-3.3.7-dist/css/bootstrap.css">
+        <link rel="stylesheet" href="../static/bootstrap/bootstrap-table-master/dist/bootstrap-table.css">
+        <link rel="stylesheet" href="../static/css/tableSetting.css">
+        <link rel="stylesheet" href="../static/css/jquery-ui.min.css"/>
+        <link rel="stylesheet" href="../static/css/cellConfigInfo.css">
+
+        <script src="../static/bootstrap/bootstrap-3.3.7-dist/js/bootstrap.js"></script>
+        <script type="text/javascript" src="../static/jquery/jquery-1.11.3.min.js"></script>
+        <script type="text/javascript" src="../static/jquery/jquery-ui.min.js"></script>
+        <script src="../static/js/myAlert.js"></script>
+        <script src="../static/bootstrap/bootstrap-table-master/dist/bootstrap-table.js"></script>
+        <script src="../static/bootstrap/bootstrap-table-master/dist/locale/bootstrap-table-zh-CN.js"></script>
+        <script src="../static/bootstrap/bootstrap-select-master/dist/js/bootstrap-select.min.js"></script>
+        <script src="../static/js/cellConfigInfo.js"></script>
+        <script src = "../static/jquery/tableExport.js"></script>
+        <script src="../static/bootstrap/bootstrap-table-master/dist/extensions/export/bootstrap-table-export.js"></script>
+
+        <title>小区信息</title>
+</head>
+<body>
+    <div class="container-fluid" >
+        <div class="row clearfix" style="margin-top: 30px" align="center">
+            <div class="col-md-12 column" >
+                <div class="form-inline">
+                    <div class="form-group" style="width: auto;margin-right: 1%"  >
+                        <label for="lineNum">线路</label>
+                        <select id="lineNum" class="form-control" data-actions-box="true"  data-width = 'fit'>
+                            <option  selected= "selected"  value="">请选择</option>
+                            <option value="郑西">郑西</option>
+                            <option value="西宝">西宝</option>
+                            <option value="银西">银西</option>
+                            <option value="大西">大西</option>
+                            <option value="西成">西成</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-right: 1%">
+                        <label for="cellName">小区名</label>
+                        <input type="text" class="form-control" id="cellName" style="width: 80px">
+                    </div>
+
+                    <div class="form-group" data-width="fit" style="margin-right: 1%">
+                        <label for="lac">LAC</label>
+                        <input type="text" class="form-control" id="lac" style="width: 80px">
+                    </div>
+
+                    <div class="form-group" style="margin-right: 0.5%">
+                        <label for="ci">CI</label>
+                        <input type="text" class="form-control" id="ci" style="width: 40px">
+                    </div>
+                    <button id="query" type="submit" style="background-color: #9A9E95" class="btn btn-default">查询</button>
+<!--
+                    <button id="resetSearch" type="button" style="background-color: #9A9E95" class="btn btn-default">重置查询</button>
+-->
+                </div>
+            </div>
+                </form>
+                <!--    表格    -->
+                <div class="row clearfix" style="margin-top: 1%;margin-left: 3%;width:94%;">
+                    <table id="cellConfigTableInfo" class="table table-bordered">
+                    <!--使用bootstrap提供的表格函数-->
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!--修改表单：
+            ：该表单使用的是jquery1.提供的对话框，默认不显示，点击修改，弹出......
+            div中display属性为none
+        -->
+        <div id="my_dialog"  class="form-horizontal" title="可供修改的" style="display: none"  >
+                <div class="form-group">
+                    <label for="inputNCC" class="col-sm-2 control-label">NCC</label>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" id="inputNCC" placeholder="请输入ncc值">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputBCC" class="col-sm-2 control-label">BCC</label>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" id="inputBCC" placeholder="请输入BCC的值">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputBCCH" class="col-sm-2 control-label">BCCH</label>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" id="inputBCCH" placeholder="请输入BCCH的值">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="inputCALL" class="col-sm-2 control-label">CALL</label>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" id="inputCALL" placeholder="请输入call">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="inputADJCELL" class="col-sm-2 control-label">ADJCELL</label>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" id="inputADJCELL" placeholder="请输入邻区">
+                    </div>
+                </div>
+
+                <div >
+                    <div class="col-sm-offset-2 col-sm-10">
+                        <button class="btn btn-default" id="cancel" style="margin-right: 10px">取消</button>
+                        <button type="submit" class="btn btn-default" id="submit">提交</button>
+                    </div>
+                </div>
+        </div>
+</div>
+
+</body>
+</html>
